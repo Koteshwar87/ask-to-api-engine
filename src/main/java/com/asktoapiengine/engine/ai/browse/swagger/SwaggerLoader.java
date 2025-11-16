@@ -37,7 +37,7 @@ import java.util.Map;
 @Component
 public class SwaggerLoader {
 
-    /**
+    /**`
      * Location pattern for all Swagger JSON files.
      * For this POC, we assume they are in:
      *

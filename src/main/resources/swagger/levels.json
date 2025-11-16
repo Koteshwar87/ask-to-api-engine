@@ -1,0 +1,42 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Index Levels API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/indices/{indexId}/levels": {
+      "get": {
+        "summary": "Get index levels",
+        "description": "Retrieves historical index levels between two dates.",
+        "operationId": "getIndexLevels",
+        "parameters": [
+          {
+            "name": "indexId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Identifier of the index",
+            "example": "NIFTY_50"
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Start date",
+            "example": "2024-01-01"
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date" },
+            "description": "End date",
+            "example": "2024-02-01"
+          }
+        ]
+      }
+    }
+  }
+}
