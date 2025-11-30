@@ -2,6 +2,7 @@ package com.asktoapiengine.engine.ai.browse.llm;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -19,6 +20,7 @@ import java.util.Map;
  * Later, when you switch to SparkAssist, you can add another implementation
  * of LlmClient that calls the SparkAssist endpoint instead.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OpenAiWebClientLlmClient implements LlmClient {
@@ -34,6 +36,10 @@ public class OpenAiWebClientLlmClient implements LlmClient {
 
     @Override
     public String generate(String prompt) {
+        log.info("OpenAiWebClientLlmClient: sending request to OpenAI model='{}'", modelName);
+        if (log.isDebugEnabled()) {
+            log.debug("OpenAiWebClientLlmClient: prompt length={}", prompt != null ? prompt.length() : 0);
+        }
         // Build request body using Map so it is easy to extend later.
         Map<String, Object> requestBody = Map.of(
                 "model", modelName,
@@ -52,6 +58,11 @@ public class OpenAiWebClientLlmClient implements LlmClient {
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .block(); // ok here, since we are in a non-reactive stack
+        log.info("OpenAiWebClientLlmClient: received response from OpenAI");
+
+        if (log.isDebugEnabled()) {
+            log.debug("OpenAiWebClientLlmClient: raw response = {}", response);
+        }
 
         // Safely navigate the response JSON:
         // choices[0].message.content

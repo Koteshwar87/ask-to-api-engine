@@ -2,6 +2,7 @@ package com.asktoapiengine.engine.ai.browse.api;
 
 import com.asktoapiengine.engine.ai.browse.core.BrowseService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
  *
  * It only delegates to BrowseService and returns the final answer.
  */
+@Slf4j
 @RestController
 @RequestMapping("/ai/browse")
 @RequiredArgsConstructor
@@ -41,7 +43,7 @@ public class BrowseController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.TEXT_PLAIN_VALUE)
     public String browse(@RequestBody BrowseRequest request) {
-
+        log.info("Received browse request: query='{}'", request.getQuery());
         String query = request.getQuery();
 
         // Delegate to the core Browse service

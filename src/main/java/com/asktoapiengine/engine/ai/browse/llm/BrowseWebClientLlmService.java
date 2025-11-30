@@ -2,6 +2,7 @@ package com.asktoapiengine.engine.ai.browse.llm;
 
 import com.asktoapiengine.engine.ai.browse.swagger.ApiOperationDescriptor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
  * Existing BrowseLlmService (ChatModel-based) is left untouched so that
  * you can easily switch between them while experimenting.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BrowseWebClientLlmService {
@@ -38,17 +40,30 @@ public class BrowseWebClientLlmService {
      * @return plain-English answer describing which endpoint(s) to use and how
      */
     public String getBrowseAnswer(String userQuery, List<ApiOperationDescriptor> candidateOperations) {
+        log.info("BrowseWebClientLlmService: building prompt for query='{}' with {} candidate operations",
+                userQuery, candidateOperations.size());
+
         if (userQuery == null || userQuery.isBlank()) {
             return "I did not receive a question. Please provide a natural language query about the APIs.";
         }
 
         // Build the full prompt string using the query + candidate Swagger operations
         String prompt = promptBuilder.buildPrompt(userQuery, candidateOperations);
+        if (log.isDebugEnabled()) {
+            // Avoid dumping huge prompt in INFO
+            log.debug("BrowseWebClientLlmService: prompt preview:\n{}",
+                    prompt.length() > 1000 ? prompt.substring(0, 1000) + "..." : prompt);
+        }
 
         // Delegate to the LLM via LlmClient (backed by WebClient + OpenAI HTTP API).
         try {
-            return llmClient.generate(prompt);
+            log.info("BrowseWebClientLlmService: calling LlmClient.generate(...)");
+            String answer = llmClient.generate(prompt);
+            log.info("BrowseWebClientLlmService: LLM returned answer length={}",
+                    answer != null ? answer.length() : 0);
+            return answer;
         } catch (RuntimeException ex) {
+            log.error("BrowseWebClientLlmService: error while calling LLM", ex);
             return "Sorry, I could not process your browse request via WebClient due to an internal error: "
                     + ex.getMessage();
         }

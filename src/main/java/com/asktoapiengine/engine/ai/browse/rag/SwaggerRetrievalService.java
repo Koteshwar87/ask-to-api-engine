@@ -3,6 +3,7 @@ package com.asktoapiengine.engine.ai.browse.rag;
 import com.asktoapiengine.engine.ai.browse.swagger.ApiOperationDescriptor;
 import com.asktoapiengine.engine.ai.browse.swagger.SwaggerApiCatalog;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -27,6 +28,7 @@ import java.util.Optional;
  *  - does NOT format final answers
  *  - It only retrieves the "most semantically relevant" APIs
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SwaggerRetrievalService {
@@ -44,6 +46,7 @@ public class SwaggerRetrievalService {
      * @return list of best candidate API operations
      */
     public List<ApiOperationDescriptor> retrieveRelevantOperations(String query) {
+        log.info("SwaggerRetrievalService: searching operations for query='{}'", query);
         if (query == null || query.isBlank()) {
             return List.of();
         }
@@ -53,6 +56,7 @@ public class SwaggerRetrievalService {
                 .query(query)
                 .topK(DEFAULT_TOP_K)
                 .build();
+        log.debug("SwaggerRetrievalService: SearchRequest = {}", searchRequest);
 
         List<Document> docs = vectorStore.similaritySearch(searchRequest);
 
@@ -70,6 +74,8 @@ public class SwaggerRetrievalService {
             Optional<ApiOperationDescriptor> op = catalog.findByOperationId(operationId);
             op.ifPresent(results::add);
         }
+        log.info("SwaggerRetrievalService: found {} operations for query='{}'",
+                results.size(), query);
 
         return results;
     }

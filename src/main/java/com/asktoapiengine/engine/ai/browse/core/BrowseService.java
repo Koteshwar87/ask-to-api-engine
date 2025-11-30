@@ -5,6 +5,7 @@ import com.asktoapiengine.engine.ai.browse.llm.BrowseWebClientLlmService;
 import com.asktoapiengine.engine.ai.browse.rag.SwaggerRetrievalService;
 import com.asktoapiengine.engine.ai.browse.swagger.ApiOperationDescriptor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.List;
  *  - Does NOT talk to the vector store directly (RAG retrieval service handles that).
  *  - Does NOT build prompts itself (BrowsePromptBuilder handles that via BrowseLlmService).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BrowseService {
@@ -42,6 +44,7 @@ public class BrowseService {
      * @return Plain-English answer describing the appropriate endpoints and how to call them.
      */
     public String handleBrowseQuery(String userQuery) {
+        log.info("Handling browse query='{}'", userQuery);
         if (userQuery == null || userQuery.isBlank()) {
             return "Please provide a question about the APIs (for example: "
                     + "\"How do I get index levels for NIFTY 50 between two dates?\").";
@@ -50,6 +53,15 @@ public class BrowseService {
         // 1. Use RAG retrieval to get the most relevant Swagger operations
         List<ApiOperationDescriptor> candidateOperations =
                 retrievalService.retrieveRelevantOperations(userQuery);
+
+        log.info("BrowseService: retrieved {} candidate operations for query='{}'",
+                candidateOperations.size(), userQuery);
+
+        if (log.isDebugEnabled()) {
+            candidateOperations.forEach(op ->
+                    log.debug("Candidate op: {} {}", op.getHttpMethod(), op.getPath())
+            );
+        }
 
         // If we couldn't find anything meaningful in Swagger, return a graceful message.
         if (candidateOperations.isEmpty()) {
@@ -64,6 +76,11 @@ public class BrowseService {
 
         // OPTION 2: Use new WebClient-based implementation (OpenAI HTTP API)
         // To switch, comment the line above and uncomment the line below:
-         return browseWebClientLlmService.getBrowseAnswer(userQuery, candidateOperations);
+        log.info("BrowseService: delegating to WebClient-based LLM");
+        String answer = browseWebClientLlmService.getBrowseAnswer(userQuery, candidateOperations);
+
+        log.info("BrowseService: received answer of length={}", answer != null ? answer.length() : 0);
+
+        return answer;
     }
 }
