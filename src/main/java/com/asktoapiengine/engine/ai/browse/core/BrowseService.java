@@ -1,6 +1,7 @@
 package com.asktoapiengine.engine.ai.browse.core;
 
 import com.asktoapiengine.engine.ai.browse.llm.BrowseLlmService;
+import com.asktoapiengine.engine.ai.browse.llm.BrowseWebClientLlmService;
 import com.asktoapiengine.engine.ai.browse.rag.SwaggerRetrievalService;
 import com.asktoapiengine.engine.ai.browse.swagger.ApiOperationDescriptor;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,12 @@ import java.util.List;
 public class BrowseService {
 
     private final SwaggerRetrievalService retrievalService;
+
+    // Existing ChatModel-based LLM service (Spring AI)
     private final BrowseLlmService browseLlmService;
+
+    // New WebClient-based LLM service (using LlmClient + OpenAI HTTP API)
+    private final BrowseWebClientLlmService browseWebClientLlmService;
 
     /**
      * Main method to be called by the controller for /ai/browse.
@@ -52,6 +58,12 @@ public class BrowseService {
         }
 
         // 2. Ask the LLM to analyze these operations and explain the best endpoint(s) to use
-        return browseLlmService.getBrowseAnswer(userQuery, candidateOperations);
+
+        // OPTION 1: Use existing Spring AI ChatModel-based implementation
+//        return browseLlmService.getBrowseAnswer(userQuery, candidateOperations);
+
+        // OPTION 2: Use new WebClient-based implementation (OpenAI HTTP API)
+        // To switch, comment the line above and uncomment the line below:
+         return browseWebClientLlmService.getBrowseAnswer(userQuery, candidateOperations);
     }
 }
