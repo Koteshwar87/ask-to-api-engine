@@ -1,21 +1,20 @@
 package com.asktoapiengine.engine.ai.browse.llm;
 
 /**
- * Simple abstraction over any Large Language Model (LLM).
+ * Common interface for all Large Language Model (LLM) providers
+ * used by the Browse flow.
  *
- * For now, it just exposes a single "generate" method which takes a
- * plain text prompt and returns a plain text response.
- *
- * This allows us to swap OpenAI (ChatGPT), SparkAssist, or any other
- * provider without changing the higher-level services.
+ * The rest of the application (services, controllers) should depend
+ * only on this interface and not on any specific LLM implementation.
  */
 public interface LlmClient {
 
     /**
-     * Generate a textual response for the given prompt.
+     * Sends the given prompt to the underlying LLM provider
+     * and returns the generated answer as plain text.
      *
-     * @param prompt the full prompt text (already formatted)
-     * @return the LLM's textual response
+     * @param prompt human-readable prompt prepared by the application
+     * @return answer returned by the LLM provider
      */
     String generate(String prompt);
 }

@@ -1,7 +1,6 @@
 package com.asktoapiengine.engine.ai.browse.core;
 
 import com.asktoapiengine.engine.ai.browse.llm.BrowseLlmService;
-import com.asktoapiengine.engine.ai.browse.llm.BrowseWebClientLlmService;
 import com.asktoapiengine.engine.ai.browse.rag.SwaggerRetrievalService;
 import com.asktoapiengine.engine.ai.browse.swagger.ApiOperationDescriptor;
 import lombok.RequiredArgsConstructor;
@@ -14,72 +13,66 @@ import java.util.List;
  * BrowseService orchestrates the full "Browse APIs" use case.
  *
  * Responsibilities:
- *  1. Accept the user's natural language query.
- *  2. Use SwaggerRetrievalService (R in RAG) to get relevant Swagger operations.
- *  3. Use BrowseLlmService to ask the LLM to explain which endpoint(s) to use and how.
- *  4. Return a plain-English answer string to the REST controller.
+ *  1. Accept the user's natural language query from the controller.
+ *  2. Use SwaggerRetrievalService (R in RAG) to find relevant Swagger operations.
+ *  3. Delegate to BrowseLlmService to ask the LLM which endpoint(s) to use and how.
+ *  4. Return a plain-English answer back to the controller.
  *
- * This service:
- *  - Does NOT know about HTTP details (that's the controller's job).
- *  - Does NOT talk to the vector store directly (RAG retrieval service handles that).
- *  - Does NOT build prompts itself (BrowsePromptBuilder handles that via BrowseLlmService).
+ * This service does not know which LLM provider is used. It only talks to
+ * BrowseLlmService, which itself uses LlmClient. The concrete provider is
+ * selected by the llm.provider property.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class BrowseService {
 
+    /**
+     * RAG retrieval component that finds the most relevant Swagger operations
+     * for the user's query using the vector store.
+     */
     private final SwaggerRetrievalService retrievalService;
 
-    // Existing ChatModel-based LLM service (Spring AI)
+    /**
+     * LLM-facing service that builds the browse prompt and calls the LLM
+     * through the LlmClient abstraction.
+     */
     private final BrowseLlmService browseLlmService;
 
-    // New WebClient-based LLM service (using LlmClient + OpenAI HTTP API)
-    private final BrowseWebClientLlmService browseWebClientLlmService;
-
     /**
-     * Main method to be called by the controller for /ai/browse.
+     * Main method invoked by the browse controller.
      *
-     * @param userQuery Natural language question about the APIs.
-     * @return Plain-English answer describing the appropriate endpoints and how to call them.
+     * @param userQuery natural language question about the APIs
+     * @return plain-English answer explaining which endpoints to call and how
      */
     public String handleBrowseQuery(String userQuery) {
-        log.info("Handling browse query='{}'", userQuery);
+        log.info("BrowseService: handling browse query='{}'", userQuery);
+
         if (userQuery == null || userQuery.isBlank()) {
-            return "Please provide a question about the APIs (for example: "
-                    + "\"How do I get index levels for NIFTY 50 between two dates?\").";
+            log.info("BrowseService: received empty or blank query");
+            return "Please provide a question about the APIs, for example: "
+                    + "\"How do I get index levels for NIFTY 50 between two dates?\"";
         }
 
-        // 1. Use RAG retrieval to get the most relevant Swagger operations
+        // 1. Use RAG retrieval to find relevant operations from Swagger
         List<ApiOperationDescriptor> candidateOperations =
                 retrievalService.retrieveRelevantOperations(userQuery);
 
         log.info("BrowseService: retrieved {} candidate operations for query='{}'",
                 candidateOperations.size(), userQuery);
 
-        if (log.isDebugEnabled()) {
-            candidateOperations.forEach(op ->
-                    log.debug("Candidate op: {} {}", op.getHttpMethod(), op.getPath())
-            );
-        }
-
-        // If we couldn't find anything meaningful in Swagger, return a graceful message.
         if (candidateOperations.isEmpty()) {
+            log.info("BrowseService: no candidate operations found for query");
             return "I could not find any API endpoints in the documentation that match your question. "
                     + "Please try rephrasing your query or check if the API is documented.";
         }
 
-        // 2. Ask the LLM to analyze these operations and explain the best endpoint(s) to use
+        // 2. Delegate to the LLM browse service
+        log.info("BrowseService: delegating to BrowseLlmService for LLM answer");
+        String answer = browseLlmService.getBrowseAnswer(userQuery, candidateOperations);
 
-        // OPTION 1: Use existing Spring AI ChatModel-based implementation
-//        return browseLlmService.getBrowseAnswer(userQuery, candidateOperations);
-
-        // OPTION 2: Use new WebClient-based implementation (OpenAI HTTP API)
-        // To switch, comment the line above and uncomment the line below:
-        log.info("BrowseService: delegating to WebClient-based LLM");
-        String answer = browseWebClientLlmService.getBrowseAnswer(userQuery, candidateOperations);
-
-        log.info("BrowseService: received answer of length={}", answer != null ? answer.length() : 0);
+        log.info("BrowseService: received answer of length={}",
+                answer != null ? answer.length() : 0);
 
         return answer;
     }

@@ -9,10 +9,31 @@ spring:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: gpt-4o-mini           # great quality, cheap
+          model: gpt-4o-mini
       embedding:
         options:
           model: text-embedding-3-small  # optimal for RAG vector store
+
+llm:
+  # Selected LLM provider for the application.
+  # This will be used in later steps with conditional providers.
+  # Valid values we will use: OPENAI_CHATMODEL, OPENAI_HTTP, OLLAMA_HTTP, SPARK_ASSIST
+  provider: OPENAI_HTTP
+
+  http:
+    # Base URL of an OpenAI-compatible HTTP endpoint.
+    # For OpenAI cloud:      https://api.openai.com/v1
+    # For local Ollama:      http://localhost:11434/v1
+    base-url: https://api.openai.com/v1
+
+    # API key used by the HTTP client. By default this reuses OPENAI_API_KEY.
+    # LLM_HTTP_API_KEY can override it if you want a separate key for HTTP calls.
+    api-key: ${LLM_HTTP_API_KEY:${OPENAI_API_KEY:}}
+
+    # Default model used by HTTP-based LLM calls.
+    # If LLM_HTTP_MODEL is not set, this falls back to the Spring AI OpenAI model
+    # and then to a safe default "gpt-4o-mini".
+    model: ${LLM_HTTP_MODEL:${spring.ai.openai.chat.options.model:gpt-4o-mini}}
 
 logging:
   level:
