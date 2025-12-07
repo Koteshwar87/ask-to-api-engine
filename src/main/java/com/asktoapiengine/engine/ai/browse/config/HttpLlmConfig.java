@@ -10,14 +10,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Configuration for the HTTP client used to call OpenAI-compatible
- * LLM providers (OpenAI cloud, Ollama with OpenAI API compatibility, etc.).
+ * LLM providers (OpenAI cloud, local Ollama, and future HTTP-based providers).
  *
  * This WebClient is shared by all HTTP-based LLM adapters.
- * The actual base URL and API key are fully driven by application properties.
+ * The actual base URL, API key and model are controlled by the llm.http.* properties.
  */
 @Slf4j
 @Configuration
-public class OpenAiConfig {
+public class HttpLlmConfig {
 
     /**
      * Builds a WebClient for OpenAI-compatible HTTP endpoints.
@@ -35,11 +35,11 @@ public class OpenAiConfig {
      * The Authorization header is added only when an API key is present.
      */
     @Bean
-    public WebClient openAiWebClient(
+    public WebClient llmHttpWebClient(
             @Value("${llm.http.base-url:https://api.openai.com/v1}") String baseUrl,
             @Value("${llm.http.api-key:}") String apiKey) {
 
-        log.info("Configuring WebClient for LLM HTTP client with baseUrl={}", baseUrl);
+        log.info("HttpLlmConfig: configuring WebClient for LLM HTTP client with baseUrl={}", baseUrl);
 
         WebClient.Builder builder = WebClient.builder()
                 .baseUrl(baseUrl)
@@ -47,10 +47,10 @@ public class OpenAiConfig {
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
 
         if (apiKey != null && !apiKey.isBlank()) {
-            log.info("LLM HTTP client will use Authorization header based on configured API key");
+            log.info("HttpLlmConfig: LLM HTTP client will use Authorization header based on configured API key");
             builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey);
         } else {
-            log.info("LLM HTTP client will be created without Authorization header (no API key configured)");
+            log.info("HttpLlmConfig: LLM HTTP client will be created without Authorization header (no API key configured)");
         }
 
         return builder.build();
