@@ -1,0 +1,26 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Corporate Actions API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/corporate-actions": {
+      "get": {
+        "summary": "Get corporate actions",
+        "description": "Returns list of corporate events like dividends, splits.",
+        "operationId": "getCorporateActions",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Security symbol",
+            "example": "RELIANCE"
+          }
+        ]
+      }
+    }
+  }
+}

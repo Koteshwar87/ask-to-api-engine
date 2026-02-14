@@ -1,0 +1,26 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Index Constituents API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/indices/{indexId}/constituents": {
+      "get": {
+        "summary": "Get index constituents",
+        "operationId": "getIndexConstituents",
+        "description": "Returns the list of securities that make up the index.",
+        "parameters": [
+          {
+            "name": "indexId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Identifier of the index",
+            "example": "NIFTY_50"
+          }
+        ]
+      }
+    }
+  }
+}
