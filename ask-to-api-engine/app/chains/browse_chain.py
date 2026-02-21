@@ -1,6 +1,6 @@
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-from langchain_chroma import Chroma
+from langchain_postgres import PGVector
 from langchain_openai import ChatOpenAI
 
 from app.swagger.catalog import SwaggerCatalog
@@ -10,7 +10,7 @@ from app.chains.prompts import BROWSE_PROMPT, format_operations_context
 
 def create_browse_chain(
     llm: ChatOpenAI,
-    vector_store: Chroma,
+    vector_store: PGVector,
     catalog: SwaggerCatalog,
 ):
     """

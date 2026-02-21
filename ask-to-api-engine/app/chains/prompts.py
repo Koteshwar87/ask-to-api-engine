@@ -1,6 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 
-from app.swagger.models import ApiOperationDescriptor, ApiParameterLocation
+from app.swagger.models import ApiOperationDescriptor, ApiParameterDescriptor, ApiParameterLocation
 
 BROWSE_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -79,7 +79,7 @@ def format_operations_context(operations: list[ApiOperationDescriptor]) -> str:
     return "\n\n".join(parts)
 
 
-def _format_param(p) -> str:
+def _format_param(p: ApiParameterDescriptor) -> str:
     req = "required" if p.required else "optional"
     line = f"      - {p.name} [{req}]"
     if p.type:

@@ -2,7 +2,8 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from langchain_chroma import Chroma
+from fastapi.middleware.cors import CORSMiddleware
+from langchain_postgres import PGVector
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from app.config import Settings
@@ -22,15 +23,28 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = Settings()
+    app.state.settings = settings
+
+    # Configure CORS from settings (single Settings load)
+    origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # Embeddings + vector store
     embeddings = OpenAIEmbeddings(
         model=settings.embedding_model,
         openai_api_key=settings.openai_api_key,
     )
-    vector_store = Chroma(
-        collection_name=settings.chroma_collection_name,
-        embedding_function=embeddings,
+    vector_store = PGVector(
+        embeddings=embeddings,
+        collection_name="swagger_operations",
+        connection=settings.database_url,
+        use_jsonb=True,
     )
 
     # Load swagger specs and build catalog
@@ -38,7 +52,7 @@ async def lifespan(app: FastAPI):
     catalog = SwaggerCatalog(operations)
     logger.info("Swagger catalog built with %d operations", len(operations))
 
-    # Index into ChromaDB
+    # Index into PGVector (uses deterministic IDs — safe to re-run on restart)
     index_operations(operations, vector_store)
 
     # LLM
@@ -56,4 +70,5 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Ask-to-API Engine", version="1.0.0", lifespan=lifespan)
+
 app.include_router(router)

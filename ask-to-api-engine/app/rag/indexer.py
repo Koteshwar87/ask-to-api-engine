@@ -1,7 +1,7 @@
 import logging
 
 from langchain_core.documents import Document
-from langchain_chroma import Chroma
+from langchain_postgres import PGVector
 
 from app.swagger.models import ApiOperationDescriptor
 
@@ -9,12 +9,16 @@ logger = logging.getLogger(__name__)
 
 
 def index_operations(
-    operations: list[ApiOperationDescriptor], vector_store: Chroma
+    operations: list[ApiOperationDescriptor], vector_store: PGVector
 ) -> None:
-    """Convert operations to LangChain Documents and add them to the vector store."""
+    """Convert operations to LangChain Documents and add them to the vector store.
+
+    Uses deterministic IDs based on operationId so restarts upsert instead of duplicating.
+    """
     documents = [_to_document(op) for op in operations]
-    vector_store.add_documents(documents)
-    logger.info("Indexed %d operations into ChromaDB", len(documents))
+    ids = [op.id for op in operations]
+    vector_store.add_documents(documents, ids=ids)
+    logger.info("Indexed %d operations into PGVector", len(documents))
 
 
 def _to_document(op: ApiOperationDescriptor) -> Document:
